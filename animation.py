@@ -14,15 +14,14 @@ from pygame.time import Clock
 from utils import *
 from color import *
 
-from test_logo import wakgood
-
 class FourierAnimation:
-    def __init__(self, size=(800, 800), frame=30, logo=None, title="Fourier Drawing"):
+    def __init__(self, logo, size=(800, 800), frame=30, title="Fourier Drawing", teleport=True):
         self.size = size
         self.frame = frame
-        self.logo = logo if logo else wakgood
+        self.logo = logo
         self.title = title
         self.zoom = False
+        self.teleport = teleport
 
         self.MIDDLE = Vec2d(*map(lambda x:x/2, self.size))
         self.scale = min(size)/2 - 100
@@ -59,11 +58,14 @@ class FourierAnimation:
 
         self.trail.append(origin)
         if len(self.trail) > 1:
-            prev = self.trail[0]
-            for i in self.trail[1:]:
-                if prev.dist(i) < 10:
-                    draw.aaline(screen, NICE_RED, prev.float_tuple, i.float_tuple)
-                prev = i
+            if self.teleport:
+                prev = self.trail[0]
+                for i in self.trail[1:]:
+                    if prev.dist(i) < 10:
+                        draw.aaline(screen, NICE_RED, prev.float_tuple, i.float_tuple)
+                    prev = i
+            else:
+                draw.aalines(screen, NICE_RED, trail)
             self.t += self.dt
 
         if self.zoom:

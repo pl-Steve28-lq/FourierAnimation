@@ -24,7 +24,7 @@ class FourierAnimation:
         self.teleport = teleport
 
         self.MIDDLE = Vec2d(*map(lambda x:x/2, self.size))
-        self.scale = min(size)/2 - 100
+        self.scale = min(size)/2 - 50
         
         self.trail_length = len(self.logo)
         self.origin_path = [(self.MIDDLE + Vec2d(*p) * self.scale).float_tuple for p in self.logo]
@@ -39,25 +39,31 @@ class FourierAnimation:
         self.dt = PI*2/len(self.waves)
 
         self.trail = []
+        self.stop = False
 
     def draw(self, screen):
         screen.fill(BLACK)
-        
-        draw.aalines(screen, DARKER_GREY, True, self.origin_path)
+
+        first = self.waves[0]
+        amp = mapf(first.amp, b=(0, self.scale))
+        draw.aalines(screen, DARKER_GREY, True, [(x-amp*cos(first.phase), y-amp*sin(first.phase)) for x, y in self.origin_path])
 
         origin = self.MIDDLE
-        for wave in self.waves:
-            radius = mapf(wave.amp, b=(0, self.scale))
-            gfxdraw.aacircle(screen, int(origin.x), int(origin.y), int(max(2, radius)), DARK_GREY)
+        if not self.stop:
+            for wave in self.waves[1:]:
+                radius = mapf(wave.amp, b=(0, self.scale))
+                gfxdraw.aacircle(screen, int(origin.x), int(origin.y), int(max(2, radius)), GREY)
 
-            angle = self.t * wave.freq + wave.phase
-            end_point = origin + (radius * cos(angle), radius * sin(angle))
-            draw.aaline(screen, WHITE, origin.int_tuple, end_point.int_tuple)
+                angle = self.t * wave.freq + wave.phase
+                end_point = origin + (radius * cos(angle), radius * sin(angle))
+                draw.aaline(screen, WHITE, origin.int_tuple, end_point.int_tuple)
 
-            origin = end_point
+                origin = end_point
 
-        self.trail.append(origin)
-        if len(self.trail) > 1:
+            self.trail.append(origin)
+        length = len(self.trail)
+
+        if length > 1:
             if self.teleport:
                 prev = self.trail[0]
                 for i in self.trail[1:]:
@@ -65,13 +71,22 @@ class FourierAnimation:
                         draw.aaline(screen, NICE_RED, prev.float_tuple, i.float_tuple)
                     prev = i
             else:
-                draw.aalines(screen, NICE_RED, trail)
-            self.t += self.dt
-
+                draw.aalines(screen, NICE_RED, False, list(map(lambda x: x.float_tuple, self.trail)))
+            if not self.stop: self.t += self.dt
+        if length > self.trail_length+15:
+            self.stop = True
+        
         if self.zoom:
             scaled = transform.scale2x(screen)
             screen.fill(BLACK)
-            screen.blit(scaled, (WIDTH / 2 - origin.x * 2, HEIGHT / 2 - origin.y * 2))
+            screen.blit(scaled, (self.size[0] / 2 - origin.x * 2, self.size[1] / 2 - origin.y * 2))
+        
+        font = pygame.font.Font("NanumSquare.ttf", 17)
+        text = font.render("https://github.com/pl-Steve28-lq", True, WHITE)
+        rect = text.get_rect()
+        rect.x = 10
+        rect.y = int(self.size[1] - rect.size[1]*3/2)
+        screen.blit(text, rect)
 
     def start(self):
         pygame.init()
@@ -81,8 +96,8 @@ class FourierAnimation:
         clock = Clock()
 
         running = True
-        while running:
-            
+        clock.tick(self.frame);__import__('time').sleep(5)
+        while running:           
             clock.tick(self.frame)
             
             for event in events.get():

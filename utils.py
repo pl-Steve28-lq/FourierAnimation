@@ -58,6 +58,15 @@ class Wave:
     def __str__(self):
         return f'Wave(freq={self.freq}, amp={self.amp}, phase={self.phase})'
 
+    def point(self, x='t'):
+        return rf'({self.cos(x)},{self.sin(x)})'
+
+    def cos(self, x='t'):
+        return rf'{self.amp:.3f}\cos\left({self.freq}{x}+{self.phase:.3f}\right)'
+
+    def sin(self, x='t'):
+        return rf'{self.amp:.3f}\sin\left({self.freq}{x}+{self.phase:.3f}\right)'
+
 
 def mapf(value, a=(0, 1), b=(0, 1)):
     return b[0] + (value - a[0]) / (a[1] - a[0]) * (b[1] - b[0])
@@ -65,3 +74,21 @@ def mapf(value, a=(0, 1), b=(0, 1)):
 from numpy.fft import fft
 def dft(x):
     return (fft(x)/len(x)).tolist()
+
+
+def getCircles(points, x='t'):
+    f = dft([complex(*p)for p in points])
+    wave = [Wave(k,c)for k,c in enumerate(f)]
+    res = []
+    idx = 1
+    while idx < len(wave):
+        w0 = wave[idx-1]
+        w1 = wave[idx]
+        res += [f'X_1=0', f'Y_1=0']if idx==1 else[f'X_{"{"}{idx}{"}"}=X_{"{"}{idx-1}{"}"}+{w0.cos(x)}', f'Y_{"{"}{idx}{"}"}=Y_{"{"}{idx-1}{"}"}+{w0.sin(x)}']
+        res += [f'(x-X_{"{"}{idx}{"}"})^2+(y-Y_{"{"}{idx}{"}"})^2={w1.amp}^2']
+        idx += 1
+    res += [f'(X_{"{"}{idx-1}{"}"}+{wave[idx-1].cos(x)}, Y_{"{"}{idx-1}{"}"}+{wave[idx-1].sin(x)})']
+    return res
+
+from test_logo import youtube
+
